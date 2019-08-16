@@ -1,43 +1,55 @@
-const express = require('express')
-const fileUpload = require('express-fileupload')
-const fs = require('fs')
-const path = require('path')
-const app = express()
-const port = 3000
+import express from 'express'
+import fileUpload from 'express-fileupload'
+import fs from 'fs'
+import path from 'path'
+import dotenv from 'dotenv'
 
-const shapesDirectory = './shapes'
+dotenv.config()
+const app = express()
+const shapesDirectory = path.join(__dirname, 'shapes')
+let shapePaths = []
+InitializeShapes()
 
 // initialize shapes
-let shapesPath = []
-fs.readdir(shapesDirectory, (err, files) => {
-  if (err) {
-    return console.log('Unable to scan directory: ' + err)
-  }
+function InitializeShapes() {
+  fs.readdir(shapesDirectory, (err, files) => {
+    if (err) {
+      return console.log('Unable to scan directory: ' + err)
+    }
 
-  files.forEach(file => shapesPath.push(`${shapesDirectory}/${file}`))
-  console.log(shapesPath)
-})
+    files.forEach(file => shapePaths.push(path.join(shapesDirectory, file)))
+    console.log('Initialized shapes')
+    console.log(shapePaths)
+  })
+}
 
 app.use(fileUpload())
-app.get('/', (req, res) => res.send('presentationToolService is running!'))
+
+app.get('/', (req, res) => res.send('imageService is running!'))
+
 app.get('/download/shape', (req, res) => {
-  res.sendfile(`${shapesDirectory}/ubuntu.png`)
-  console.log(shapesPath)
+  console.log('GET /download/shape')
+  res.sendFile(shapePaths.pop())
+  if (!shapePaths.length) InitializeShapes()
 })
+
 app.post('/upload/shape', (req, res) => {
+  console.log('POST /upload/shape')
   if (Object.keys(req.files).length == 0) {
     return res.status(400).send('No files were uploaded.')
   }
 
-  let shape = req.files.data
-
-  shape.mv(`${shapesDirectory}/${req.files.data.name}`, err => {
+  const shape = req.files.data
+  const shapePath = path.join(shapesDirectory, shape.name)
+  shape.mv(shapePath, err => {
     if (err) return res.status(500).send(err)
   })
 
-  if (shapesPath.indexOf(shape) === -1)
-    shapesPath.push(`${shapesDirectory}/${req.files.data.name}`)
-  console.log(shapesPath)
-  return res.send('200')
+  if (shapePaths.indexOf(shape) === -1) shapePaths.push(shapePath)
+  console.log(shapePaths)
+  return res.send('Image uploaded successfully')
 })
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+
+app.listen(process.env.PORT, () =>
+  console.log(`Example app listening on port ${process.env.PORT}!`)
+)
