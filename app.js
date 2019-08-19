@@ -1,8 +1,9 @@
-import express from 'express'
-import fileUpload from 'express-fileupload'
-import fs from 'fs'
-import path from 'path'
-import dotenv from 'dotenv'
+const express = require('express')
+const fileUpload = require('express-fileupload')
+const fs = require('fs')
+const path = require('path')
+const dotenv = require('dotenv')
+const chalk = require('chalk')
 
 dotenv.config()
 const app = express()
@@ -28,30 +29,42 @@ app.use(fileUpload())
 app.get('/', (req, res) => res.send('imageService is running!'))
 
 app.get('/download/shape', (req, res) => {
-  console.log('GET /download/shape')
+  console.log(chalk.blue('GET /download/shape'))
+
   let shapePath = shapePaths.pop()
-  res.setHeader('Shape-Name', path.basename(shapePath))
+  let shapeName = path.basename(shapePath)
+  res.setHeader('Shape-Name', shapeName)
+  console.log('Returned image:', shapeName)
+
   res.sendFile(shapePath)
   if (!shapePaths.length) InitializeShapes()
 })
 
 app.post('/upload/shape', (req, res) => {
-  console.log('POST /upload/shape')
+  console.log(chalk.blue('POST /upload/shape'))
+
   if (Object.keys(req.files).length == 0) {
     return res.status(400).send('No files were uploaded.')
   }
 
   const shape = req.files.data
+  console.log('Received image: ', shape.name)
   const shapePath = path.join(shapesDirectory, shape.name)
   shape.mv(shapePath, err => {
     if (err) return res.status(500).send(err)
   })
 
-  if (shapePaths.indexOf(shape) === -1) shapePaths.push(shapePath)
+  // If Image with same name uploaded, skip adding it to shapePaths.
+  // It means an existing image was updated.
+  if (shapePaths.indexOf(shapePath) === -1) shapePaths.push(shapePath)
   console.log(shapePaths)
   return res.send('Image uploaded successfully')
 })
 
 app.listen(process.env.PORT, () =>
-  console.log(`Example app listening on port ${process.env.PORT}!`)
+  console.log(`Example app listening on port ${process.env.PORT}!
+  ${chalk.red('Paths')}               ${chalk.red('Description')}
+  /                   Health check
+  /download/shape     Downloads one shape at a time with 'Shape-Name' property in the Header
+  /upload/shape       Upload a shape`)
 )
