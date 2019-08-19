@@ -29,7 +29,9 @@ app.get('/', (req, res) => res.send('imageService is running!'))
 
 app.get('/download/shape', (req, res) => {
   console.log('GET /download/shape')
-  res.sendFile(shapePaths.pop())
+  let shapePath = shapePaths.pop()
+  res.setHeader('Shape-Name', path.basename(shapePath))
+  res.sendFile(shapePath)
   if (!shapePaths.length) InitializeShapes()
 })
 
