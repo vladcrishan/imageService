@@ -54,7 +54,7 @@ app.post('/upload/shape', (req, res) => {
     if (err) return res.status(500).send(err)
   })
 
-  // If Image with same name uploaded, skip adding it to shapePaths.
+  // If an image with the same name is uploaded, skip adding it to shapePaths.
   // It means an existing image was updated.
   if (shapePaths.indexOf(shapePath) === -1) shapePaths.push(shapePath)
   console.log(shapePaths)
